@@ -1,152 +1,59 @@
 import { useContext } from 'react'
-import { NavLink } from 'react-router-dom'
+import { PlusIcon, CheckIcon } from '@heroicons/react/24/solid'
 import { ShoppingCartContext } from '../../Context'
-import ShoppingCart from '../ShoppingCart'
 
-const Navbar = () => {
+const Card = (data) => {
   const context = useContext(ShoppingCartContext)
-  const activeStyle = 'underline underline-offset-4'
 
-  // Sign Out
-  const signOut = localStorage.getItem('sign-out')
-  const parsedSignOut = JSON.parse(signOut)
-  const isUserSignOut = context.signOut || parsedSignOut
-  // Account
-  const account = localStorage.getItem('account')
-  const parsedAccount = JSON.parse(account)
-  // Has an account
-  const noAccountInLocalStorage = parsedAccount ? Object.keys(parsedAccount).length === 0 : true
-  const noAccountInLocalState = context.account ? Object.keys(context.account).length === 0 : true
-  const hasUserAnAccount = !noAccountInLocalStorage || !noAccountInLocalState
-
-  const handleSignOut = () => {
-    const stringifiedSignOut = JSON.stringify(true)
-    localStorage.setItem('sign-out', stringifiedSignOut)
-    context.setSignOut(true)
+  const showProduct = (productDetail) => {
+    context.openProductDetail()
+    context.setProductToShow(productDetail)
   }
 
-  const renderView = () => {
-    if (hasUserAnAccount && !isUserSignOut) {
+  const addProductsToCart = (event, productData) => {
+    event.stopPropagation()
+    context.setCount(context.count + 1)
+    context.setCartProducts([...context.cartProducts, productData])
+    context.openCheckoutSideMenu()
+    context.closeProductDetail()
+  }
+
+  const renderIcon = (id) => {
+    const isInCart = context.cartProducts.filter(product => product.id === id).length > 0
+
+    if (isInCart) {
       return (
-        <>
-          <li className='text-black/60'>
-            {parsedAccount?.email}
-          </li>
-          <li>
-            <NavLink
-              to='/my-orders'
-              className={({ isActive }) => isActive ? activeStyle : undefined}>
-              My Orders
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to='/my-account'
-              className={({ isActive }) => isActive ? activeStyle : undefined}>
-              My Account
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to='/sign-in'
-              className={({ isActive }) => isActive ? activeStyle : undefined}
-              onClick={() => handleSignOut()}>
-              Sign out
-            </NavLink>
-          </li>
-        </>
+        <div
+          className='absolute top-0 right-0 flex justify-center items-center bg-black w-6 h-6 rounded-full m-2 p-1'>
+          <CheckIcon className='h-6 w-6 text-white'></CheckIcon>
+        </div>
       )
     } else {
       return (
-        <li>
-          <NavLink
-            to="/sign-in"
-            className={({ isActive }) => isActive ? activeStyle : undefined }
-            onClick={() => handleSignOut()}>
-            Sign in
-          </NavLink>
-        </li>
+        <div
+          className='absolute top-0 right-0 flex justify-center items-center bg-white w-6 h-6 rounded-full m-2 p-1'
+          onClick={(event) => addProductsToCart(event, data.data)}>
+          <PlusIcon className='h-6 w-6 text-black'></PlusIcon>
+        </div>
       )
     }
   }
 
   return (
-    <nav className='flex justify-between items-center fixed z-10 top-0 w-full py-5 px-8 text-sm font-light'>
-      <ul className='flex items-center gap-3'>
-        <li className='font-semibold text-lg'>
-          <NavLink to={`${isUserSignOut ? '/sign-in' : '/'}`}>
-            Shopi
-          </NavLink>
-        </li>
-        <li>
-          <NavLink
-            to='/'
-            onClick={() => context.setSearchByCategory()}
-            className={({ isActive }) =>
-              isActive ? activeStyle : undefined
-            }>
-            All
-          </NavLink>
-        </li>
-        <li>
-          <NavLink
-            to='/clothes'
-            onClick={() => context.setSearchByCategory('clothes')}
-            className={({ isActive }) =>
-              isActive ? activeStyle : undefined
-            }>
-            Clothes
-          </NavLink>
-        </li>
-        <li>
-          <NavLink
-            to='/electronics'
-            onClick={() => context.setSearchByCategory('electronics')}
-            className={({ isActive }) =>
-              isActive ? activeStyle : undefined
-            }>
-            Electronics
-          </NavLink>
-        </li>
-        <li>
-          <NavLink
-            to='/furnitures'
-            onClick={() => context.setSearchByCategory('furnitures')}
-            className={({ isActive }) =>
-              isActive ? activeStyle : undefined
-            }>
-            Furnitures
-          </NavLink>
-        </li>
-        <li>
-          <NavLink
-            to='/toys'
-            onClick={() => context.setSearchByCategory('toys')}
-            className={({ isActive }) =>
-              isActive ? activeStyle : undefined
-            }>
-            Toys
-          </NavLink>
-        </li>
-        <li>
-          <NavLink
-            to='/others'
-            onClick={() => context.setSearchByCategory('others')}
-            className={({ isActive }) =>
-              isActive ? activeStyle : undefined
-            }>
-            Others
-          </NavLink>
-        </li>
-      </ul>
-      <ul className='flex items-center gap-3'>
-        {renderView()}
-        <li className='flex items-center'>
-          <ShoppingCart />
-        </li>
-      </ul>
-    </nav>
+    <div
+      className='bg-white cursor-pointer w-56 h-60 rounded-lg'
+      onClick={() => showProduct(data.data)}>
+      <figure className='relative mb-2 w-full h-4/5'>
+        <span className='absolute bottom-0 left-0 bg-white/60 rounded-lg text-black text-xs m-2 px-3 py-0.5'>{data.data.category.name}</span>
+        <img className='w-full h-full object-cover rounded-lg' src={data.data.images[0]} alt={data.data.title} />
+        {renderIcon(data.data.id)}
+      </figure>
+      <p className='flex justify-between items-center'>
+        <span className='text-sm font-light'>{data.data.title}</span>
+        <span className='text-lg font-medium'>${data.data.price}</span>
+      </p>
+    </div>
   )
 }
 
-export default Navbar
+export default Card
