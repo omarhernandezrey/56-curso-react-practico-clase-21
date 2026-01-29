@@ -1,0 +1,104 @@
+name: Tests & Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    name: Code Quality & Tests
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Verificar formato (Prettier)
+        run: npm run format:check
+
+      - name: Linting (ESLint)
+        run: npm run lint
+
+      - name: Ejecutar tests unitarios
+        run: npm test -- --coverage
+
+      - name: Verificar cobertura mínima
+        run: |
+          COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
+          echo "Cobertura: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+            echo "❌ Cobertura por debajo del 80%"
+            exit 1
+          fi
+          echo "✅ Cobertura >= 80%"
+
+      - name: Upload cobertura a Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/coverage-final.json
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: Build de la aplicación
+        run: npm run build
+
+  security:
+    runs-on: ubuntu-latest
+    name: Audit de Seguridad
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Verificar dependencias vulnerables
+        run: |
+          npm audit --audit-level=high && echo "✅ Sin vulnerabilidades altas"
+          npm audit --audit-level=critical && echo "✅ Sin vulnerabilidades críticas"
+
+  e2e:
+    runs-on: ubuntu-latest
+    name: E2E Tests (Cypress)
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          build: npm run build
+          start: npm run preview
+          browser: chrome
+          wait-on: 'http://localhost:3000'
+          wait-on-timeout: 120

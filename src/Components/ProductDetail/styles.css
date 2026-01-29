@@ -1,0 +1,23 @@
+.product-detail {
+  width: min(100vw, 360px);
+  height: calc(100vh - 68px);
+  top: 68px;
+  overflow: hidden;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .product-detail {
+    width: 100vw;
+    height: calc(100vh - 64px - env(safe-area-inset-bottom));
+    top: 64px;
+    bottom: auto;
+  }
+}
+
+@media (max-width: 380px) {
+  .product-detail {
+    width: 100vw;
+    max-width: 100%;
+  }
+}

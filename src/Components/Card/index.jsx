@@ -1,0 +1,72 @@
+import { useContext } from 'react'
+import { PlusIcon, CheckIcon } from '@heroicons/react/24/solid'
+import { ShoppingCartContext } from '../../Context'
+
+const Card = ({ data }) => {
+  const context = useContext(ShoppingCartContext)
+
+  // Validar que los datos existan
+  if (!data) {
+    return null
+  }
+
+  const showProduct = (productDetail) => {
+    context.openProductDetail()
+    context.setProductToShow(productDetail)
+  }
+
+  const addProductsToCart = (event, productData) => {
+    event.stopPropagation()
+    context.setCount(context.count + 1)
+    context.setCartProducts([...context.cartProducts, productData])
+    context.openCheckoutSideMenu()
+    context.closeProductDetail()
+  }
+
+  const renderIcon = (id) => {
+    const isInCart = context.cartProducts.filter(product => product.id === id).length > 0
+
+    if (isInCart) {
+      return (
+        <div
+          className='absolute top-0 right-0 flex justify-center items-center bg-black w-6 h-6 rounded-full m-2 p-1'>
+          <CheckIcon className='h-6 w-6 text-white'></CheckIcon>
+        </div>
+      )
+    } else {
+      return (
+        <div
+          className='absolute top-0 right-0 flex justify-center items-center bg-white w-6 h-6 rounded-full m-2 p-1'
+          onClick={(event) => addProductsToCart(event, data)}>
+          <PlusIcon className='h-6 w-6 text-black'></PlusIcon>
+        </div>
+      )
+    }
+  }
+
+  return (
+    <div
+      className='bg-white cursor-pointer w-full rounded-lg shadow hover:shadow-lg transition-shadow'
+      onClick={() => showProduct(data)}>
+      <figure className='relative mb-2 w-full h-40 sm:h-48 md:h-56'>
+        <span className='absolute bottom-0 left-0 bg-white/60 rounded text-black text-xs m-1 px-2 py-1'>
+          {data.category?.name || 'Producto'}
+        </span>
+        <img 
+          className='w-full h-full object-cover rounded-t-lg' 
+          src={data.images?.[0]} 
+          alt={data.title} 
+        />
+        {renderIcon(data.id)}
+      </figure>
+      <div className='p-3 sm:p-4'>
+        <p className='flex justify-between items-start gap-2 mb-2'>
+          <span className='text-xs sm:text-sm font-light line-clamp-2'>{data.title}</span>
+          <span className='text-sm sm:text-base font-medium flex-shrink-0'>${data.price}</span>
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export default Card
