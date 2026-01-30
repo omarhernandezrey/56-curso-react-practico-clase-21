@@ -1,0 +1,22 @@
+# Development - para desarrollo local
+FROM node:18-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache dumb-init
+
+# Instalar todas las dependencias incluyendo dev
+COPY package*.json ./
+RUN npm ci
+
+# Copiar código fuente
+COPY . .
+
+EXPOSE 3001
+
+# Generar Prisma Client
+RUN npx prisma generate
+
+ENTRYPOINT ["dumb-init", "--"]
+
+CMD ["npm", "run", "dev"]

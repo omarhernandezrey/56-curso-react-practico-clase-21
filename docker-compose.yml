@@ -26,20 +26,22 @@ services:
       retries: 3
       start_period: 40s
 
-  # Backend - Express.js (necesita ser creado)
+  # Backend - Express.js + Node.js
   backend:
     container_name: ecommerce-backend
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "3001:3001"
     environment:
       - NODE_ENV=development
       - PORT=3001
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/ecommerce_dev
-      - JWT_SECRET=dev-secret-key-change-in-production
+      - JWT_SECRET=dev-secret-key-must-be-at-least-32-characters-long-12345
+      - JWT_EXPIRATION=7d
       - CORS_ORIGIN=http://localhost:3000
+      - LOG_LEVEL=debug
     depends_on:
       postgres:
         condition: service_healthy
