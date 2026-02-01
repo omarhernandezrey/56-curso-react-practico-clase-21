@@ -21,7 +21,7 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Instalar dumb-init para manejar signals correctamente
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init=1.2.8-r0
 
 # Instalar dependencias de producción solamente
 COPY package*.json ./
@@ -46,6 +46,12 @@ EXPOSE 3001
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3001/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+
+# User no-root para seguridad
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+USER nodejs
 
 # Usar dumb-init para iniciar el proceso
 ENTRYPOINT ["dumb-init", "--"]

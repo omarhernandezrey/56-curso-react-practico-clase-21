@@ -3,7 +3,7 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init=1.2.8-r0
 
 # Instalar todas las dependencias incluyendo dev
 COPY package*.json ./

@@ -1,0 +1,62 @@
+# Git
+.git
+.gitignore
+
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist
+build
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
+*.md
+docs/
+
+# Tests
+test
+__tests__
+*.test.js
+*.test.ts
+coverage
+jest.config.js
+jest.setup.ts
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+temp/
+cache/
+logs/
+prisma/
+migrations/
+
+# Development
+docker-compose.yml
+docker-compose.dev.yml
+Dockerfile.dev
+nodemon.json
+verify-setup.sh
