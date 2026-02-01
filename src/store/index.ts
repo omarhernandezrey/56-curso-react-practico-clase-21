@@ -5,7 +5,8 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import type { CartItem, Product, User, Order, FilterState } from '@types/index';
+import type { CartItem, Product, User, Order, FilterState } from '../types/index.js';
+import type { StateCreator } from 'zustand';
 
 interface AppStore {
   // Auth state

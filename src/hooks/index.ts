@@ -1,71 +1,54 @@
 /**
- * Custom Hooks
- * Hooks reutilizables para la aplicación
+ * Custom Hooks Library
+ * Hooks reutilizables para patrones comunes en la aplicación
  */
 
-import { useCallback, useState } from 'react';
-import { useAppStore } from '@store/index';
-import type { Product } from '@types/index';
+import { useState, useCallback, useMemo } from 'react';
+import { useAppStore } from '../store/index.js';
+import type { Product } from '../types/index.js';
 
 /**
- * Hook para manejar estado de carga y errores en peticiones
+ * useAsync - Manejar operaciones asincrónicas con loading y error
+ * @template T - Tipo de datos retornado
+ * @param {Function} asyncFunction - Función asincrónica a ejecutar
+ * @returns {Object} - Estado y métodos para manejar la operación
  */
-export const useAsync = <T,>(
-  asyncFunction: () => Promise<T>,
-  immediate = true
-) => {
+export function useAsync<T>(asyncFunction: () => Promise<T>) {
   const [status, setStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
   const execute = useCallback(async () => {
     setStatus('pending');
-    setData(null);
-    setError(null);
-
     try {
       const response = await asyncFunction();
       setData(response);
       setStatus('success');
       return response;
     } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
       setStatus('error');
-      throw error;
     }
   }, [asyncFunction]);
 
-  useState(() => {
-    if (immediate) {
-      execute();
-    }
-  });
-
-  return { execute, status, data, error };
-};
+  return { status, data, error, execute };
+}
 
 /**
- * Hook para manejar el carrito de compras
+ * useShoppingCart - Gestor simplificado del carrito de compras
  */
-export const useShoppingCart = () => {
-  const {
-    cart,
-    addToCart,
-    removeFromCart,
-    updateCartQuantity,
-    clearCart,
-    getCartTotal,
-    getCartCount,
-  } = useAppStore((state) => ({
-    cart: state.cart,
-    addToCart: state.addToCart,
-    removeFromCart: state.removeFromCart,
-    updateCartQuantity: state.updateCartQuantity,
-    clearCart: state.clearCart,
-    getCartTotal: state.getCartTotal,
-    getCartCount: state.getCartCount,
-  }));
+export function useShoppingCart() {
+  const { cart, addToCart, removeFromCart, updateQuantity, clearCart, getCartTotal, getCartCount } = useAppStore(
+    (state) => ({
+      cart: state.cart,
+      addToCart: state.addToCart,
+      removeFromCart: state.removeFromCart,
+      updateQuantity: state.updateQuantity,
+      clearCart: state.clearCart,
+      getCartTotal: state.getCartTotal,
+      getCartCount: state.getCartCount,
+    })
+  );
 
   return {
     items: cart,
@@ -73,163 +56,138 @@ export const useShoppingCart = () => {
     count: getCartCount(),
     addToCart,
     removeFromCart,
-    updateQuantity: updateCartQuantity,
-    clear: clearCart,
+    updateQuantity,
+    clearCart,
   };
-};
+}
 
 /**
- * Hook para manejar la búsqueda y filtros
+ * useSearch - Manejo de búsqueda y filtros
  */
-export const useSearch = () => {
-  const { filters, setSearchQuery, setSelectedCategory, setPriceRange, clearFilters } =
-    useAppStore((state) => ({
-      filters: state.filters,
+export function useSearch() {
+  const { searchQuery, selectedCategory, priceRange, setSearchQuery, setSelectedCategory, setPriceRange, clearFilters } = useAppStore(
+    (state) => ({
+      searchQuery: state.searchQuery,
+      selectedCategory: state.selectedCategory,
+      priceRange: state.priceRange,
       setSearchQuery: state.setSearchQuery,
       setSelectedCategory: state.setSelectedCategory,
       setPriceRange: state.setPriceRange,
       clearFilters: state.clearFilters,
-    }));
-
-  const search = useCallback(
-    (query: string) => {
-      setSearchQuery(query);
-    },
-    [setSearchQuery]
-  );
-
-  const filterByCategory = useCallback(
-    (categoryId: number | null) => {
-      setSelectedCategory(categoryId);
-    },
-    [setSelectedCategory]
-  );
-
-  const filterByPrice = useCallback(
-    (min: number, max: number) => {
-      setPriceRange(min, max);
-    },
-    [setPriceRange]
+    })
   );
 
   return {
-    filters,
-    search,
-    filterByCategory,
-    filterByPrice,
+    filters: { searchQuery, selectedCategory, priceRange },
+    search: setSearchQuery,
+    filterByCategory: setSelectedCategory,
+    filterByPrice: setPriceRange,
     clearFilters,
   };
-};
+}
 
 /**
- * Hook para filtrar productos basado en los filtros activos
+ * useFilteredProducts - Filtrar productos basado en los filtros activos
  */
-export const useFilteredProducts = (products: Product[]) => {
-  const { filters } = useAppStore((state) => ({
-    filters: state.filters,
-  }));
+export function useFilteredProducts(products: Product[]) {
+  const { searchQuery, selectedCategory, priceRange } = useAppStore(
+    (state) => ({
+      searchQuery: state.searchQuery,
+      selectedCategory: state.selectedCategory,
+      priceRange: state.priceRange,
+    })
+  );
 
-  const filtered = products.filter((product) => {
-    // Filtro por búsqueda
-    if (
-      filters.searchQuery &&
-      !product.title.toLowerCase().includes(filters.searchQuery.toLowerCase())
-    ) {
-      return false;
+  return useMemo(() => {
+    let filtered = [...products];
+
+    // Filter by search query
+    if (searchQuery) {
+      filtered = filtered.filter((product) =>
+        product.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
 
-    // Filtro por categoría
-    if (
-      filters.selectedCategory !== null &&
-      product.category.id !== filters.selectedCategory
-    ) {
-      return false;
+    // Filter by category
+    if (selectedCategory && selectedCategory !== 'all') {
+      filtered = filtered.filter((product) =>
+        product.category?.name?.toLowerCase() === selectedCategory.toLowerCase()
+      );
     }
 
-    // Filtro por precio
-    if (
-      product.price < filters.priceRange.min ||
-      product.price > filters.priceRange.max
-    ) {
-      return false;
+    // Filter by price
+    if (priceRange) {
+      filtered = filtered.filter(
+        (product) =>
+          product.price >= priceRange.min && product.price <= priceRange.max
+      );
     }
 
-    return true;
-  });
-
-  return filtered;
-};
+    return filtered;
+  }, [products, searchQuery, selectedCategory, priceRange]);
+}
 
 /**
- * Hook para manejar modales/UI
+ * useUIState - Manejar estado de modales y UI
  */
-export const useUIState = () => {
-  const {
-    isMenuOpen,
-    isProductDetailOpen,
-    isCheckoutMenuOpen,
-    toggleMenu,
-    toggleProductDetail,
-    toggleCheckoutMenu,
-    closeAllModals,
-  } = useAppStore((state) => ({
-    isMenuOpen: state.isMenuOpen,
-    isProductDetailOpen: state.isProductDetailOpen,
-    isCheckoutMenuOpen: state.isCheckoutMenuOpen,
-    toggleMenu: state.toggleMenu,
-    toggleProductDetail: state.toggleProductDetail,
-    toggleCheckoutMenu: state.toggleCheckoutMenu,
-    closeAllModals: state.closeAllModals,
-  }));
+export function useUIState() {
+  const { isMenuOpen, isProductDetailOpen, isCheckoutMenuOpen, toggleMenu, toggleProductDetail, toggleCheckoutMenu, closeAllModals } = useAppStore(
+    (state) => ({
+      isMenuOpen: state.isMenuOpen,
+      isProductDetailOpen: state.isProductDetailOpen,
+      isCheckoutMenuOpen: state.isCheckoutMenuOpen,
+      toggleMenu: state.toggleMenu,
+      toggleProductDetail: state.toggleProductDetail,
+      toggleCheckoutMenu: state.toggleCheckoutMenu,
+      closeAllModals: state.closeAllModals,
+    })
+  );
 
   return {
     modals: {
-      menu: isMenuOpen,
-      productDetail: isProductDetailOpen,
-      checkoutMenu: isCheckoutMenuOpen,
+      isMenuOpen,
+      isProductDetailOpen,
+      isCheckoutMenuOpen,
     },
     toggle: {
       menu: toggleMenu,
       productDetail: toggleProductDetail,
-      checkoutMenu: toggleCheckoutMenu,
+      checkout: toggleCheckoutMenu,
     },
     closeAll: closeAllModals,
   };
-};
+}
 
 /**
- * Hook para manejar validación de formularios simple
+ * useFormValidation - Validación y manejo de formularios
+ * @template T - Tipo del objeto de valores del formulario
  */
-export const useFormValidation = <T extends Record<string, unknown>>(
-  initialValues: T,
-  onSubmit: (values: T) => void | Promise<void>
-) => {
+export function useFormValidation<T extends Record<string, any>>(initialValues: T, onSubmit: (values: T) => void | Promise<void>) {
   const [values, setValues] = useState<T>(initialValues);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
+  const [touched, setTouched] = useState<Partial<Record<keyof T, boolean>>>({});
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setValues((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+    const fieldValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+    setValues((prev) => ({
+      ...prev,
+      [name]: fieldValue,
+    }));
   }, []);
 
   const handleBlur = useCallback((e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name } = e.target;
-    setTouched((prev) => ({ ...prev, [name]: true }));
+    setTouched((prev) => ({
+      ...prev,
+      [name]: true,
+    }));
   }, []);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      setIsSubmitting(true);
-      try {
-        await onSubmit(values);
-      } catch (error) {
-        console.error('Form submission error:', error);
-      } finally {
-        setIsSubmitting(false);
-      }
+      await onSubmit(values);
     },
     [values, onSubmit]
   );
@@ -244,17 +202,19 @@ export const useFormValidation = <T extends Record<string, unknown>>(
     values,
     errors,
     touched,
-    isSubmitting,
     handleChange,
     handleBlur,
     handleSubmit,
     reset,
-    setFieldValue: (field: keyof T, value: unknown) =>
-      setValues((prev) => ({ ...prev, [field]: value })),
+    setValues,
+    setErrors,
   };
-};
+}
 
-export default {
+/**
+ * Export todos los hooks como objeto para facilitar imports
+ */
+export const Hooks = {
   useAsync,
   useShoppingCart,
   useSearch,
@@ -262,3 +222,5 @@ export default {
   useUIState,
   useFormValidation,
 };
+
+export default Hooks;
