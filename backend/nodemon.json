@@ -1,13 +1,9 @@
-{# Node.js runtime configuration
-
-
-
-
-
-
-
-
-
-}  }    "NODE_ENV": "development"  "env": {  "exec": "ts-node src/index.ts",  "ignore": ["src/**/*.test.ts"],  "ext": "ts",  "watch": ["src"],EXPOSE 3001
-ENV NODE_ENV=production
-ENV NODE_OPTIONS=--max-old-space-size=512
+{
+  "watch": ["src"],
+  "ext": "ts",
+  "ignore": ["src/**/*.test.ts"],
+  "exec": "tsx src/index.ts",
+  "env": {
+    "NODE_ENV": "development"
+  }
+}

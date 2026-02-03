@@ -1,6 +1,6 @@
 import 'dotenv/config.js';
-import { createApp, startServer } from './app';
-import { logger } from '@config/logger';
+import { createApp, startServer } from './app.js';
+import { logger } from '@config/logger.js';
 
 async function main(): Promise<void> {
   try {

@@ -1,11 +1,11 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
-import { config } from '@config/environment';
-import { logger } from '@config/logger';
-import { corsMiddleware } from '@middleware/cors';
-import { requestLogger } from '@middleware/logging';
-import { errorHandler, notFoundHandler } from '@middleware/errorHandler';
-import { rateLimitMiddleware } from '@middleware/rateLimit';
-import routes from '@routes/index';
+import { config } from '@config/environment.js';
+import { logger } from '@config/logger.js';
+import { corsMiddleware } from '@middleware/cors.js';
+import { requestLogger } from '@middleware/logging.js';
+import { errorHandler, notFoundHandler } from '@middleware/errorHandler.js';
+import { rateLimitMiddleware } from '@middleware/rateLimit.js';
+import routes from '@routes/index.js';
 
 export function createApp(): Express {
   const app = express();
